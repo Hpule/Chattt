@@ -8,13 +8,16 @@ LIBS =
 # Add sendPDU.o and recvPDU.o to the list of object files
 OBJS = networks.o gethostbyname.o pollLib.o safeUtil.o sendPDU.o recvPDU.o
 
-all: cclient server
+all: cclient server server_poll
 
 cclient: cclient.c $(OBJS)
 	$(CC) $(CFLAGS) -o cclient cclient.c $(OBJS) $(LIBS)
 
 server: server.c $(OBJS)
 	$(CC) $(CFLAGS) -o server server.c $(OBJS) $(LIBS)
+
+server_poll: server.c $(OBJS)
+	$(CC) $(CFLAGS) -o server_poll server_poll.c $(OBJS) $(LIBS)
 
 sendPDU.o: sendPDU.c sendPDU.h
 	$(CC) $(CFLAGS) -c sendPDU.c
