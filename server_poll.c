@@ -100,7 +100,7 @@ void processClient(int clientSocket){
 
 void recvFromClient(int clientSocket)
 {
-    printf("Processing client on socket: %d\n", clientSocket);
+    printf("\nProcessing client on socket: %d", clientSocket);
 
 	//Null and Change Change everything!
 	uint8_t dataBuffer[MAXBUF] = {0};
@@ -117,7 +117,9 @@ void recvFromClient(int clientSocket)
 
 	if (messageLen > 0)
 	{
-    printf("Message received on socket %d, length: %d, Data: %s\n", clientSocket, messageLen, dataBuffer);
+    	printf("Message received on socket %d, length: %d, Data: %s\n", clientSocket, messageLen, dataBuffer);
+		sendPDU(clientSocket, dataBuffer, messageLen);
+		printf("Echoed message back to client\n");
 	}
 	else
 	{

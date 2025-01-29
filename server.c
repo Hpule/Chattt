@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
 
 void recvFromClient(int clientSocket)
 {
+	printf("Processing client on socket: %d\n", clientSocket);
 	//Null and Change Change everything!
 	uint8_t dataBuffer[MAXBUF] = {0};
 	int messageLen = 0;
@@ -67,6 +68,7 @@ void recvFromClient(int clientSocket)
 	//now get the data from the client_socket
 	// messageLen = recvPDU(clientSocket, dataBuffer, MAXBUF, 0); 
 	messageLen = recvPDU(clientSocket, dataBuffer, MAXBUF); 
+
 	if (messageLen < 0)
 	{
 		perror("recvPDU call");
@@ -76,6 +78,9 @@ void recvFromClient(int clientSocket)
 	if (messageLen > 0)
 	{
 		printf("Message received, length: %d Data: %s\n", messageLen, dataBuffer);
+		// Echo the message back to the client
+		sendPDU(clientSocket, dataBuffer, messageLen);
+		printf("Echoed message back to client\n");
 	}
 	else
 	{
@@ -101,4 +106,3 @@ int checkArgs(int argc, char *argv[])
 	
 	return portNumber;
 }
-

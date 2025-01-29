@@ -27,9 +27,11 @@
 #include "recvPDU.h"
 #include "pollLib.h"
 
+
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
 
+// ----- Lab Functions -----
 void clientControl(int socketNum); 
 void processStdin(int socketNum);
 void processMsgFromServer(int socketNum); 
@@ -46,8 +48,9 @@ int main(int argc, char * argv[])
 
 	/* set up the TCP Client socket  */
 	socketNum = tcpClientSetup(argv[1], argv[2], DEBUG_FLAG);
-	
-	clientControl(socketNum);
+
+	clientControl(socketNum);	
+
 	// sendToServer(socketNum);
 	
 	close(socketNum);
@@ -55,22 +58,16 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+
+
 // void sendToServer(int socketNum)
 // {
 // 	uint8_t sendBuf[MAXBUF];   //data buffer
 // 	int sendLen = 0;        //amount of data to send
 // 	int sent = 0;            //actual amount of data sent/* get the data and send it   */
-// 	//int recvLen = 0;        //amount of data received
-
-// 	while(1){
-// 		sendLen = readFromStdin(sendBuf);
-// 		printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
-
-
-
-
-// 	}
-
+	
+// 	sendLen = readFromStdin(sendBuf);
+// 	printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
 	
 // 	sent = sendPDU(socketNum, sendBuf, sendLen); 
 // 	if (sent < 0)
@@ -85,13 +82,13 @@ int main(int argc, char * argv[])
 void clientControl(int socketNum){
 	setupPollSet();
 
-	 
-	addToPollSet(STDIN_FILENO);
-	addToPollSet(socketNum); 
+	addToPollSet(STDIN_FILENO);	// Monitor user input
+	addToPollSet(socketNum); 	// Monitor server messages
 
 	while(1){
-        printf("Waiting for activity...\n");
-
+		printf("$: "); // Display the prompt
+		fflush(stdout); // Flush the output buffer
+		
 		int socketNumber = pollCall(-1); 
 		printf("pollCall returned socketNumber: %d\n", socketNumber);
 
@@ -100,12 +97,16 @@ void clientControl(int socketNum){
 			exit(-1); 
 		}
 
-		if(socketNumber == STDIN_FILENO){
-			processStdin(socketNumber); 
-		} else if(socketNumber == socketNum){
-			processMsgFromServer(socketNumber);
-
-		}
+        // Handle activity on STDIN (user input)
+        if (socketNumber == STDIN_FILENO) {
+            printf("Processing stdin...\n");
+            processStdin(socketNum); // Pass the server socket to send user input
+        }
+        // Handle activity on the server socket
+        else if (socketNumber == socketNum) {
+            printf("Processing server message...\n");
+            processMsgFromServer(socketNum);
+        }
 	}
 }
 
@@ -115,6 +116,8 @@ void processStdin(int socketNum){
 
 	sendLen = readFromStdin(sendBuf);
 
+	sendBuf[sendLen - 1] = '\0'; // Remove the trailing newline added by readFromStdin
+
 	if(sendPDU(socketNum, sendBuf, sendLen) < 0){
 		perror("sendPDU call");
 		exit(-1);
@@ -123,30 +126,29 @@ void processStdin(int socketNum){
     printf("Sent %d bytes to server: %s\n", sendLen, sendBuf);
 }
 
+
 void processMsgFromServer(int socketNum){
 	uint8_t dataBuffer[MAXBUF] = {0};
 	int recvLen = 0;
 
 	recvLen = recvPDU(socketNum, dataBuffer, MAXBUF);
 
-	if (recvLen < 0)
-	{
-		perror("recvPDU call");
-		close(socketNum);
-		exit(-1);
-	}
+    if (recvLen == 0) {
+        // Server closed the connection
+        printf("Server closed the connection.\n");
+        close(socketNum);
+        exit(0);
+    } else if (recvLen < 0) {
+        perror("recvPDU failed");
+        close(socketNum);
+        exit(-1);
+    }
 
-	if (recvLen > 0)
-	{
-		printf("Message received, length: %d Data: %s\n", recvLen, dataBuffer);
-	}
-	else
-	{
-		printf("Server closed connection\n");
-		close(socketNum);
-		exit(-1);
-	}
+    // Null-terminate and print the server's response
+    dataBuffer[recvLen] = '\0';
+    printf("Server response: %s\n", dataBuffer);
 }
+
 
 int readFromStdin(uint8_t * buffer)
 {
